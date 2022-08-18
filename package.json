@@ -5,7 +5,7 @@
   "main": "dist/app.js",
   "scripts": {
     "lint": "eslint . --ext .ts",
-    "dev": "cp .env ./dist/.env && tsc && cd ./dist && cross-env node app.js",
+    "dev": "cp .env ./dist/.env && tsc && cd ./dist && cross-env node -r module-alias/register app.js",
     "build": "cp .env ./dist.env && tsc "
   },
   "repository": {
@@ -33,6 +33,7 @@
   },
   "dependencies": {
     "config": "^3.3.7",
+    "dayjs": "^1.11.5",
     "discord.js": "^14.2.0",
     "firebase": "^9.9.2",
     "firebase-admin": "^11.0.1",

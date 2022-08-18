@@ -8,5 +8,4 @@ const app = initializeApp({
     storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
     credential: cert('service-account-file.json'),
 });
-
 export const firestoreDB = getFirestore(app);
