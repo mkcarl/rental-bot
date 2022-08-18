@@ -1,5 +1,6 @@
-console.log('hello world');
+import 'module-alias/register';
 
+console.log('hello world');
 // TODO :
 // 1. split cost evenly or follow ratio or manual
 // 2. monthly reminder

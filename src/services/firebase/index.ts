@@ -1,11 +1,12 @@
-import {FirebaseOptions, initializeApp} from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-import config from 'config'
+import { initializeApp, cert } from 'firebase-admin/app';
+import { getFirestore } from 'firebase-admin/firestore';
+import * as dotenv from 'dotenv';
+dotenv.config();
 
-const firebaseConfigs = config.get<FirebaseOptions>('firebaseConfig')
+const app = initializeApp({
+    projectId: process.env.FIREBASE_PROJECT_ID,
+    storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
+    credential: cert('service-account-file.json'),
+});
 
-const app = initializeApp(firebaseConfigs)
-
-export const analytics = getAnalytics(app);
-
-export default app;
+export const firestoreDB = getFirestore(app);
