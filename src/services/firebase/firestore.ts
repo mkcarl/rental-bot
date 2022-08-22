@@ -34,3 +34,50 @@ export async function getAllInvoices(): Promise<Array<Invoice>> {
     });
     return data;
 }
+export async function getAllInvoicesByGuild(
+    guildId: string
+): Promise<Array<Invoice>> {
+    const data: Array<Invoice> = [];
+    (
+        await firestoreDB
+            .collection('invoice')
+            .where('guildId', '==', guildId)
+            .get()
+    ).docs.forEach((value) => {
+        const inv = value.data() as Invoice;
+        data.push(inv);
+    });
+    return data;
+}
+
+export async function getAllInvoicesByPayer(
+    payerId: string
+): Promise<Array<Invoice>> {
+    const data: Array<Invoice> = [];
+    (
+        await firestoreDB
+            .collection('invoice')
+            .where('payer', '==', payerId)
+            .get()
+    ).docs.forEach((value) => {
+        const inv = value.data() as Invoice;
+        data.push(inv);
+    });
+    return data;
+}
+
+export async function getAllInvoicesByDebtor(
+    debtorId: string
+): Promise<Array<Invoice>> {
+    const data: Array<Invoice> = [];
+    (
+        await firestoreDB
+            .collection('invoice')
+            .orderBy(`debtor.${debtorId}`)
+            .get()
+    ).docs.forEach((value) => {
+        const inv = value.data() as Invoice;
+        data.push(inv);
+    });
+    return data;
+}
