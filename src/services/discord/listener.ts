@@ -1,15 +1,16 @@
 import { client } from '@service/discord';
 import {
+    editDebtors,
     getAllInvoices,
     getInvoice,
     insertInvoice,
 } from '@service/firebase/firestore';
 import {
     ActionRowBuilder,
-    APIActionRowComponent,
-    APIMessageActionRowComponent,
+    ActionRowData,
     ButtonBuilder,
     ButtonStyle,
+    ComponentType,
     EmbedBuilder,
     GuildMember,
     Role,
@@ -22,6 +23,7 @@ async function reloadCache() {
     for (const [, guild] of await client.guilds.fetch()) {
         const a = await guild.fetch();
         await a.members.fetch();
+        await a.channels.fetch();
     }
 }
 
@@ -99,21 +101,58 @@ client.on('interactionCreate', async (interaction) => {
         const invoiceId = await insertInvoice(invoice);
 
         const embed = await generateInvoiceEmbed(invoiceId);
-        // const row = new ActionRowBuilder()
-        //     .addComponents(
-        //         new ButtonBuilder()
-        //             .setLabel('Paid')
-        //             .setCustomId(invoiceId)
-        //             .setStyle(ButtonStyle.Primary)
-        //     )
-        //     .addComponents(new MessageAc());
+        const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
+            new ButtonBuilder()
+                .setLabel('Paid')
+                .setCustomId(invoiceId)
+                .setStyle(ButtonStyle.Primary)
+        );
 
-        await interaction.reply({
+        const message = await interaction.reply({
             embeds: [embed],
             content: Array.from(users).join(' '),
-            // components: [row.toJSON()],
+            components: [row],
         });
     }
+});
+
+client.on('interactionCreate', async (interaction) => {
+    if (!interaction.isButton()) return;
+    const message = interaction.message;
+    const invoiceId = message.embeds.pop()?.footer?.text.slice(1);
+    if (!invoiceId) {
+        await interaction.reply('An error occurred. Cannot find invoice.');
+        return;
+    }
+    const invoice = await getInvoice(invoiceId);
+    if (
+        !invoice.debtor.map((debtor) => debtor.id).includes(interaction.user.id)
+    ) {
+        await interaction.reply({
+            content: 'You are not part of this invoice.',
+            ephemeral: true,
+        });
+        return;
+    }
+    const debtor = invoice.debtor.find(
+        (value) => value.id === interaction.user.id
+    );
+    if (!debtor) {
+        await interaction.reply('An error occurred. Cannot find debtor.');
+        return;
+    }
+    debtor.paid = debtor.amount;
+    invoice.debtor
+        .filter((value) => value.id !== interaction.user.id)
+        .push(debtor);
+
+    await editDebtors(invoiceId, invoice.debtor);
+
+    await interaction.reply({
+        content: interaction.message.content,
+        components: interaction.message.components,
+        embeds: [await generateInvoiceEmbed(invoiceId)],
+    });
 });
 
 async function generateInvoiceEmbed(invoiceId: string) {

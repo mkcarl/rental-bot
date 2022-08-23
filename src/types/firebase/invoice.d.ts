@@ -3,5 +3,7 @@ type Invoice = {
     title: string;
     guildId: string;
     payer: string;
-    debtor: Array<{ id: string; amount: number; paid: number }>;
+    debtor: Debtor[];
 };
+
+type Debtor = { id: string; amount: number; paid: number };

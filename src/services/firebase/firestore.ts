@@ -1,9 +1,18 @@
 import { firestoreDB } from '@service/firebase';
-import dayjs from 'dayjs';
 
 export async function insertInvoice(invoice: Invoice): Promise<string> {
     const doc = await firestoreDB.collection('invoice').add(invoice);
     return doc.id;
+}
+
+export async function editDebtors(
+    invoiceId: string,
+    debtors: Debtor[]
+): Promise<void> {
+    const doc = await firestoreDB
+        .collection('invoice')
+        .doc(invoiceId)
+        .update({ debtor: debtors });
 }
 
 export async function getAllInvoices(): Promise<Array<Invoice>> {
