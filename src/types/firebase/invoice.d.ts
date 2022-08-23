@@ -3,5 +3,5 @@ type Invoice = {
     title: string;
     guildId: string;
     payer: string;
-    debtor: Record<string, { amount: number; paid: number }>;
+    debtor: Array<{ id: string; amount: number; paid: number }>;
 };

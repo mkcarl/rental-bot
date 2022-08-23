@@ -1,29 +1,9 @@
 import { firestoreDB } from '@service/firebase';
 import dayjs from 'dayjs';
 
-export async function insertDummyData(): Promise<void> {
-    const dummyData: Invoice = {
-        guildId: '766133385848160296',
-        timestamp: dayjs().unix(),
-        title: 'Foo bar',
-        payer: '317217081126944769',
-        debtor: {
-            '604181968703193098': {
-                paid: 0,
-                amount: 10.0,
-            },
-            '246597082800979979': {
-                paid: 0,
-                amount: 20.0,
-            },
-        },
-    };
-
-    await firestoreDB.collection('invoice').add(dummyData);
-}
-
-export async function insertInvoice(invoice: Invoice): Promise<void> {
-    await firestoreDB.collection('invoice').add(invoice);
+export async function insertInvoice(invoice: Invoice): Promise<string> {
+    const doc = await firestoreDB.collection('invoice').add(invoice);
+    return doc.id;
 }
 
 export async function getAllInvoices(): Promise<Array<Invoice>> {
@@ -34,6 +14,12 @@ export async function getAllInvoices(): Promise<Array<Invoice>> {
     });
     return data;
 }
+
+export async function getInvoice(invoiceId: string): Promise<Invoice> {
+    const doc = await firestoreDB.collection('invoice').doc(invoiceId).get();
+    return (await doc.data()) as Invoice;
+}
+
 export async function getAllInvoicesByGuild(
     guildId: string
 ): Promise<Array<Invoice>> {

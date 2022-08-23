@@ -44,6 +44,12 @@ export const splitEven = new SlashCommandBuilder()
     })
     .addUserOption((option) => {
         return option
+            .setName('payer')
+            .setDescription('Payer')
+            .setRequired(false);
+    })
+    .addUserOption((option) => {
+        return option
             .setName('user1')
             .setDescription('Another user')
             .setRequired(false);
