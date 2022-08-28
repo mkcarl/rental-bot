@@ -4,22 +4,6 @@ export const ping = new SlashCommandBuilder()
     .setName('ping')
     .setDescription('It will pong');
 
-export const test = new SlashCommandBuilder()
-    .setName('test')
-    .setDescription('for testing')
-    .addMentionableOption((option) => {
-        return option
-            .setName('user1')
-            .setDescription('just for test 1')
-            .setRequired(true);
-    })
-    .addStringOption((option) => {
-        return option
-            .setName('string1')
-            .setDescription('test string 2')
-            .setRequired(false);
-    });
-
 export const split = new SlashCommandBuilder()
     .setName('split')
     .setDescription('Split bill accordingly')
@@ -207,4 +191,14 @@ export const split = new SlashCommandBuilder()
                     .setName('amount10')
                     .setDescription('Amount owed by Debtor 10');
             });
+    });
+
+export const invoiceDetail = new SlashCommandBuilder()
+    .setName('invoice')
+    .setDescription('Show invoice detail')
+    .addStringOption((option) => {
+        return option
+            .setName('id')
+            .setDescription('Invoice ID')
+            .setRequired(true);
     });
