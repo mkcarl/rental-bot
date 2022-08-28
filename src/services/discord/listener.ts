@@ -70,7 +70,7 @@ client.on('interactionCreate', async (interaction) => {
                 users.add(user.user);
             } else if (user instanceof Role) {
                 for (const member of user.members.values()) {
-                    users.add(member.user);
+                    if (!member.user.bot) users.add(member.user);
                 }
             } else {
                 console.log('Uncaught type');
@@ -78,7 +78,7 @@ client.on('interactionCreate', async (interaction) => {
             }
 
             const n = users.size;
-            const split = _.round(amount / n, 2);
+            const split = amount / n;
 
             const now = dayjs();
             const invoice: Invoice = {
@@ -205,6 +205,9 @@ client.on('interactionCreate', async (interaction) => {
     if (interaction.commandName === 'invoice') {
         const invoiceId = interaction.options.getString('id')!;
         try {
+            const invoice = await getInvoice(invoiceId);
+            if (invoice.guildId !== interaction.guildId) throw Error();
+
             const embed = await generateInvoiceEmbed(invoiceId);
             const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
                 new ButtonBuilder()
@@ -239,6 +242,7 @@ client.on('interactionCreate', async (interaction) => {
             switch (loanType) {
                 case 'completed':
                     for (const [id, invoice] of _.entries(allInvoices)) {
+                        if (invoice.guildId !== interaction.guildId) continue;
                         const payerIsUser =
                             invoice.payer === interaction.user.id;
                         const invoiceIsCompleted = isInvoiceCompleted(invoice);
@@ -249,6 +253,7 @@ client.on('interactionCreate', async (interaction) => {
                     break;
                 case 'active':
                     for (const [id, invoice] of _.entries(allInvoices)) {
+                        if (invoice.guildId !== interaction.guildId) continue;
                         const payerIsUser =
                             invoice.payer === interaction.user.id;
                         const invoiceIsCompleted = isInvoiceCompleted(invoice);
@@ -259,6 +264,7 @@ client.on('interactionCreate', async (interaction) => {
                     break;
                 case 'all':
                     for (const [id, invoice] of _.entries(allInvoices)) {
+                        if (invoice.guildId !== interaction.guildId) continue;
                         const payerIsUser =
                             invoice.payer === interaction.user.id;
                         if (payerIsUser) {
@@ -270,18 +276,20 @@ client.on('interactionCreate', async (interaction) => {
                     break;
             }
 
+            const description = _.entries(invoices)
+                .map(([id, iv], index) => {
+                    return `${index + 1}. ${iv.title} (${dayjs
+                        .unix(iv.timestamp)
+                        .format('DD-MM-YYYY HH:mm')}) - \`${id}\` ${
+                        isInvoiceCompleted(iv) ? '✅' : '❌'
+                    }`;
+                })
+                .join('\n');
+
             const embed = new EmbedBuilder()
                 .setTitle(`${interaction.user.username} as payer (${loanType})`)
                 .setDescription(
-                    _.entries(invoices)
-                        .map(([id, iv], index) => {
-                            return `${index + 1}. ${iv.title} (${dayjs
-                                .unix(iv.timestamp)
-                                .format('DD-MM-YYYY HH:mm')}) - \`${id}\` ${
-                                isInvoiceCompleted(iv) ? '✅' : '❌'
-                            }`;
-                        })
-                        .join('\n')
+                    description !== '' ? description : 'No invoices found'
                 );
 
             await interaction.reply({ embeds: [embed] });
@@ -299,6 +307,7 @@ client.on('interactionCreate', async (interaction) => {
             switch (debtType) {
                 case 'completed':
                     for (const [id, invoice] of _.entries(allInvoices)) {
+                        if (invoice.guildId !== interaction.guildId) continue;
                         const debtorIDs = invoice.debtor.map((d) => d.id);
                         const userIsDebtor = debtorIDs.includes(
                             interaction.user.id
@@ -315,6 +324,7 @@ client.on('interactionCreate', async (interaction) => {
                     break;
                 case 'pending':
                     for (const [id, invoice] of _.entries(allInvoices)) {
+                        if (invoice.guildId !== interaction.guildId) continue;
                         const debtorIDs = invoice.debtor.map((d) => d.id);
                         const userIsDebtor = debtorIDs.includes(
                             interaction.user.id
@@ -331,6 +341,7 @@ client.on('interactionCreate', async (interaction) => {
                     break;
                 case 'all':
                     for (const [id, invoice] of _.entries(allInvoices)) {
+                        if (invoice.guildId !== interaction.guildId) continue;
                         const debtorIDs = invoice.debtor.map((d) => d.id);
                         const userIsDebtor = debtorIDs.includes(
                             interaction.user.id
@@ -343,21 +354,19 @@ client.on('interactionCreate', async (interaction) => {
                 default:
                     break;
             }
-
+            const description = _.entries(invoices)
+                .map(([id, iv], index) => {
+                    return `${index + 1}. ${iv.title} - \`${id}\` ${
+                        isDebtPaid(iv, interaction.user.id) ? '✅' : '❌'
+                    }`;
+                })
+                .join('\n');
             const embed = new EmbedBuilder()
                 .setTitle(
                     `${interaction.user.username} as debtor (${debtType})`
                 )
                 .setDescription(
-                    _.entries(invoices)
-                        .map(([id, iv], index) => {
-                            return `${index + 1}. ${iv.title} - \`${id}\` ${
-                                isDebtPaid(iv, interaction.user.id)
-                                    ? '✅'
-                                    : '❌'
-                            }`;
-                        })
-                        .join('\n')
+                    description !== '' ? description : 'No invoice found.'
                 );
 
             await interaction.reply({ embeds: [embed] });
@@ -390,6 +399,15 @@ client.on('interactionCreate', async (interaction) => {
         await interaction.reply('❌ An error occurred. Cannot find debtor.');
         return;
     }
+
+    if (isDebtPaid(invoice, debtor.id)) {
+        await interaction.reply({
+            content: 'You have already paid for this invoice.',
+            ephemeral: true,
+        });
+        return;
+    }
+
     debtor.paid = debtor.amount;
     invoice.debtor
         .filter((value) => value.id !== interaction.user.id)
@@ -428,9 +446,10 @@ async function generateInvoiceEmbed(invoiceId: string) {
                 invoice.debtor
                     .map(
                         (usr) =>
-                            `${client.users.cache.get(usr.id)} - RM ${
-                                usr.amount
-                            }${usr.paid > 0 ? ' ✅' : ''}\n`
+                            `${client.users.cache.get(usr.id)} - RM ${_.round(
+                                usr.amount,
+                                2
+                            )}${usr.paid > 0 ? ' ✅' : ''}\n`
                     )
                     .join('')
         )
