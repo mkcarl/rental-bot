@@ -15,11 +15,10 @@ export async function editDebtors(
         .update({ debtor: debtors });
 }
 
-export async function getAllInvoices(): Promise<Array<Invoice>> {
-    const data: Array<Invoice> = [];
+export async function getAllInvoices(): Promise<Record<string, Invoice>> {
+    const data: Record<string, Invoice> = {};
     (await firestoreDB.collection('invoice').get()).docs.forEach((value) => {
-        const inv = value.data() as Invoice;
-        data.push(inv);
+        data[value.id] = value.data() as Invoice;
     });
     return data;
 }

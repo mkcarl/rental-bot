@@ -202,3 +202,39 @@ export const invoiceDetail = new SlashCommandBuilder()
             .setDescription('Invoice ID')
             .setRequired(true);
     });
+
+export const invoiceChecker = new SlashCommandBuilder()
+    .setName('check')
+    .setDescription('Check how much you loaned or how much you paid.')
+    .addSubcommand((subcommand) => {
+        return subcommand
+            .setName('loan')
+            .setDescription('Check which invoice you are the payer.')
+            .addStringOption((option) => {
+                return option
+                    .setName('type')
+                    .setDescription('Type of invoice you want to check')
+                    .addChoices(
+                        { name: 'all', value: 'all' },
+                        { name: 'active', value: 'active' },
+                        { name: 'completed', value: 'completed' }
+                    )
+                    .setRequired(true);
+            });
+    })
+    .addSubcommand((subcommand) => {
+        return subcommand
+            .setName('debt')
+            .setDescription('Check which invoice you are the debtor.')
+            .addStringOption((option) => {
+                return option
+                    .setName('type')
+                    .setDescription('Type of invoice you want to check')
+                    .addChoices(
+                        { name: 'all', value: 'all' },
+                        { name: 'active', value: 'active' },
+                        { name: 'completed', value: 'completed' }
+                    )
+                    .setRequired(true);
+            });
+    });

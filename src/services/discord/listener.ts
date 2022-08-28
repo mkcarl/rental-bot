@@ -226,6 +226,68 @@ client.on('interactionCreate', async (interaction) => {
             });
         }
     }
+
+    if (interaction.commandName === 'check') {
+        if (interaction.options.getSubcommand() === 'loan') {
+            const loanType = interaction.options.getString('type') as
+                | 'all'
+                | 'active'
+                | 'completed';
+
+            const invoices: Record<string, Invoice> = {};
+
+            const allInvoices = await getAllInvoices();
+            switch (loanType) {
+                case 'completed':
+                    for (const [id, invoice] of _.entries(allInvoices)) {
+                        const payerIsUser =
+                            invoice.payer === interaction.user.id;
+                        const invoiceIsCompleted = isInvoiceCompleted(invoice);
+                        if (payerIsUser && invoiceIsCompleted) {
+                            invoices[id] = invoice;
+                        }
+                    }
+                    break;
+                case 'active':
+                    for (const [id, invoice] of _.entries(allInvoices)) {
+                        const payerIsUser =
+                            invoice.payer === interaction.user.id;
+                        const invoiceIsCompleted = isInvoiceCompleted(invoice);
+                        if (payerIsUser && !invoiceIsCompleted) {
+                            invoices[id] = invoice;
+                        }
+                    }
+                    break;
+                case 'all':
+                    for (const [id, invoice] of _.entries(allInvoices)) {
+                        const payerIsUser =
+                            invoice.payer === interaction.user.id;
+                        if (payerIsUser) {
+                            invoices[id] = invoice;
+                        }
+                    }
+                    break;
+                default:
+                    break;
+            }
+
+            const embed = new EmbedBuilder()
+                .setTitle(`${interaction.user.username} as payer (${loanType})`)
+                .setDescription(
+                    _.entries(invoices)
+                        .map(([id, iv], index) => {
+                            return `${index + 1}. ${iv.title} (${dayjs
+                                .unix(iv.timestamp)
+                                .format('DD-MM-YYYY HH:mm')}) - \`${id}\` ${
+                                isInvoiceCompleted(iv) ? '✔' : '❌'
+                            }`;
+                        })
+                        .join('\n')
+                );
+
+            await interaction.reply({ embeds: [embed] });
+        }
+    }
 });
 
 client.on('interactionCreate', async (interaction) => {
@@ -300,4 +362,20 @@ async function generateInvoiceEmbed(invoiceId: string) {
         .setFooter({ text: `#${invoiceId}` }).data;
 
     return embed;
+}
+
+function isInvoiceCompleted(invoice: Invoice) {
+    const loanedAmount = invoice.debtor.reduce(
+        (previousValue, currentValue) => {
+            return previousValue + currentValue.amount;
+        },
+        0
+    );
+    const receivedAmount = invoice.debtor.reduce(
+        (previousValue, currentValue) => {
+            return previousValue + currentValue.paid;
+        },
+        0
+    );
+    return loanedAmount === receivedAmount;
 }

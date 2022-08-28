@@ -2,7 +2,12 @@ import DiscordService from './service';
 import * as dotenv from 'dotenv';
 import { REST } from '@discordjs/rest';
 import { Routes } from 'discord.js';
-import { invoiceDetail, ping, split } from '@service/discord/commands';
+import {
+    invoiceChecker,
+    invoiceDetail,
+    ping,
+    split,
+} from '@service/discord/commands';
 dotenv.config();
 
 const token = process.env.DISCORD_API_TOKEN as string;
@@ -11,7 +16,7 @@ const app = new DiscordService(token);
 
 export const client = app.client;
 
-const commands = [ping, split, invoiceDetail];
+const commands = [ping, split, invoiceDetail, invoiceChecker];
 
 const rest = new REST({ version: '10' }).setToken(token);
 
