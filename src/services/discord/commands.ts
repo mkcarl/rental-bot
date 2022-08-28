@@ -102,3 +102,103 @@ export const splitEven = new SlashCommandBuilder()
             .setDescription('Another user')
             .setRequired(false);
     });
+
+export const splitManual = new SlashCommandBuilder()
+    .setName('splitmanual')
+    .setDescription('Splits the bill manually')
+    .addStringOption((option) => {
+        return option
+            .setName('title')
+            .setDescription('Title of the bill')
+            .setRequired(true);
+    })
+    .addUserOption((option) => {
+        return option
+            .setName('debtor1')
+            .setDescription('Debtor 1')
+            .setRequired(true);
+    })
+    .addNumberOption((option) => {
+        return option
+            .setName('amount1')
+            .setDescription('Amount owed by Debtor 1')
+            .setRequired(true);
+    })
+    .addUserOption((option) => {
+        return option
+            .setName('payer')
+            .setDescription('Payer')
+            .setRequired(false);
+    })
+    .addUserOption((option) => {
+        return option.setName('debtor2').setDescription('Debtor 2');
+    })
+    .addNumberOption((option) => {
+        return option
+            .setName('amount2')
+            .setDescription('Amount owed by Debtor 2');
+    })
+    .addUserOption((option) => {
+        return option.setName('debtor3').setDescription('Debtor 3');
+    })
+    .addNumberOption((option) => {
+        return option
+            .setName('amount3')
+            .setDescription('Amount owed by Debtor 3');
+    })
+    .addUserOption((option) => {
+        return option.setName('debtor4').setDescription('Debtor 4');
+    })
+    .addNumberOption((option) => {
+        return option
+            .setName('amount4')
+            .setDescription('Amount owed by Debtor 4');
+    })
+    .addUserOption((option) => {
+        return option.setName('debtor5').setDescription('Debtor 5');
+    })
+    .addNumberOption((option) => {
+        return option
+            .setName('amount5')
+            .setDescription('Amount owed by Debtor 5');
+    })
+    .addUserOption((option) => {
+        return option.setName('debtor6').setDescription('Debtor 6');
+    })
+    .addNumberOption((option) => {
+        return option
+            .setName('amount6')
+            .setDescription('Amount owed by Debtor 6');
+    })
+    .addUserOption((option) => {
+        return option.setName('debtor7').setDescription('Debtor 7');
+    })
+    .addNumberOption((option) => {
+        return option
+            .setName('amount7')
+            .setDescription('Amount owed by Debtor 7');
+    })
+    .addUserOption((option) => {
+        return option.setName('debtor8').setDescription('Debtor 8');
+    })
+    .addNumberOption((option) => {
+        return option
+            .setName('amount8')
+            .setDescription('Amount owed by Debtor 8');
+    })
+    .addUserOption((option) => {
+        return option.setName('debtor9').setDescription('Debtor 9');
+    })
+    .addNumberOption((option) => {
+        return option
+            .setName('amount9')
+            .setDescription('Amount owed by Debtor 9');
+    })
+    .addUserOption((option) => {
+        return option.setName('debtor10').setDescription('Debtor 10');
+    })
+    .addNumberOption((option) => {
+        return option
+            .setName('amount10')
+            .setDescription('Amount owed by Debtor 10');
+    });

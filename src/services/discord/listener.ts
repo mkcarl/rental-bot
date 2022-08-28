@@ -114,6 +114,96 @@ client.on('interactionCreate', async (interaction) => {
             components: [row],
         });
     }
+
+    if (interaction.commandName === 'splitmanual') {
+        const title = interaction.options.getString('title')!;
+        const payer = interaction.options.getUser('payer') ?? interaction.user;
+        const debtors = [
+            {
+                debtor: interaction.options.getUser('debtor1'),
+                amount: interaction.options.getNumber('amount1'),
+            },
+            {
+                debtor: interaction.options.getUser('debtor2'),
+                amount: interaction.options.getNumber('amount2'),
+            },
+            {
+                debtor: interaction.options.getUser('debtor3'),
+                amount: interaction.options.getNumber('amount3'),
+            },
+            {
+                debtor: interaction.options.getUser('debtor4'),
+                amount: interaction.options.getNumber('amount4'),
+            },
+            {
+                debtor: interaction.options.getUser('debtor5'),
+                amount: interaction.options.getNumber('amount5'),
+            },
+            {
+                debtor: interaction.options.getUser('debtor6'),
+                amount: interaction.options.getNumber('amount6'),
+            },
+            {
+                debtor: interaction.options.getUser('debtor7'),
+                amount: interaction.options.getNumber('amount7'),
+            },
+            {
+                debtor: interaction.options.getUser('debtor8'),
+                amount: interaction.options.getNumber('amount8'),
+            },
+            {
+                debtor: interaction.options.getUser('debtor9'),
+                amount: interaction.options.getNumber('amount9'),
+            },
+            {
+                debtor: interaction.options.getUser('debtor10'),
+                amount: interaction.options.getNumber('amount10'),
+            },
+        ].filter((d) => d.debtor && d.amount);
+
+        if (
+            new Set(debtors.map((d) => d.debtor)).size !==
+            debtors.map((d) => d.debtor).length
+        ) {
+            await interaction.reply({
+                content:
+                    '❌ Command failed. There are __duplicated debtors__ found',
+                ephemeral: true,
+            });
+            return;
+        }
+
+        const now = dayjs();
+        const invoice: Invoice = {
+            timestamp: now.unix(),
+            title,
+            guildId: interaction.guildId!,
+            payer: payer.id,
+            debtor: debtors.map((d) => {
+                return {
+                    id: d.debtor!.id,
+                    amount: d.amount!,
+                    paid: d.debtor === payer ? d.amount! : 0,
+                };
+            }),
+        };
+
+        const invoiceId = await insertInvoice(invoice);
+
+        const embed = await generateInvoiceEmbed(invoiceId);
+        const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
+            new ButtonBuilder()
+                .setLabel('Paid')
+                .setCustomId(invoiceId)
+                .setStyle(ButtonStyle.Primary)
+        );
+
+        const message = await interaction.reply({
+            embeds: [embed],
+            content: debtors.map((d) => d.debtor).join(' '),
+            components: [row],
+        });
+    }
 });
 
 client.on('interactionCreate', async (interaction) => {
@@ -121,7 +211,7 @@ client.on('interactionCreate', async (interaction) => {
     const message = interaction.message;
     const invoiceId = message.embeds.pop()?.footer?.text.slice(1);
     if (!invoiceId) {
-        await interaction.reply('An error occurred. Cannot find invoice.');
+        await interaction.reply('❌ An error occurred. Cannot find invoice.');
         return;
     }
     const invoice = await getInvoice(invoiceId);
@@ -129,7 +219,7 @@ client.on('interactionCreate', async (interaction) => {
         !invoice.debtor.map((debtor) => debtor.id).includes(interaction.user.id)
     ) {
         await interaction.reply({
-            content: 'You are not part of this invoice.',
+            content: '❌ You are not part of this invoice.',
             ephemeral: true,
         });
         return;
@@ -138,7 +228,7 @@ client.on('interactionCreate', async (interaction) => {
         (value) => value.id === interaction.user.id
     );
     if (!debtor) {
-        await interaction.reply('An error occurred. Cannot find debtor.');
+        await interaction.reply('❌ An error occurred. Cannot find debtor.');
         return;
     }
     debtor.paid = debtor.amount;
@@ -148,11 +238,19 @@ client.on('interactionCreate', async (interaction) => {
 
     await editDebtors(invoiceId, invoice.debtor);
 
-    await interaction.reply({
-        content: interaction.message.content,
-        components: interaction.message.components,
-        embeds: [await generateInvoiceEmbed(invoiceId)],
-    });
+    try {
+        await interaction.reply({
+            content: interaction.message.content,
+            components: interaction.message.components,
+            embeds: [await generateInvoiceEmbed(invoiceId)],
+        });
+    } catch (e) {
+        await interaction.channel?.send({
+            content: interaction.message.content,
+            components: interaction.message.components,
+            embeds: [await generateInvoiceEmbed(invoiceId)],
+        });
+    }
 });
 
 async function generateInvoiceEmbed(invoiceId: string) {
