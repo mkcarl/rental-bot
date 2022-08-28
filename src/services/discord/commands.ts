@@ -232,7 +232,7 @@ export const invoiceChecker = new SlashCommandBuilder()
                     .setDescription('Type of invoice you want to check')
                     .addChoices(
                         { name: 'all', value: 'all' },
-                        { name: 'active', value: 'active' },
+                        { name: 'pending', value: 'pending' },
                         { name: 'completed', value: 'completed' }
                     )
                     .setRequired(true);

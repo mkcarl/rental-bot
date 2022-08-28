@@ -7,7 +7,6 @@ import {
 } from '@service/firebase/firestore';
 import {
     ActionRowBuilder,
-    ActionRowData,
     ButtonBuilder,
     ButtonStyle,
     ComponentType,
@@ -279,7 +278,83 @@ client.on('interactionCreate', async (interaction) => {
                             return `${index + 1}. ${iv.title} (${dayjs
                                 .unix(iv.timestamp)
                                 .format('DD-MM-YYYY HH:mm')}) - \`${id}\` ${
-                                isInvoiceCompleted(iv) ? '✔' : '❌'
+                                isInvoiceCompleted(iv) ? '✅' : '❌'
+                            }`;
+                        })
+                        .join('\n')
+                );
+
+            await interaction.reply({ embeds: [embed] });
+        }
+        if (interaction.options.getSubcommand() === 'debt') {
+            const debtType = interaction.options.getString('type') as
+                | 'all'
+                | 'pending'
+                | 'completed';
+
+            const invoices: Record<string, Invoice> = {};
+
+            const allInvoices = await getAllInvoices();
+
+            switch (debtType) {
+                case 'completed':
+                    for (const [id, invoice] of _.entries(allInvoices)) {
+                        const debtorIDs = invoice.debtor.map((d) => d.id);
+                        const userIsDebtor = debtorIDs.includes(
+                            interaction.user.id
+                        );
+
+                        if (userIsDebtor) {
+                            const debtIsPaid = isDebtPaid(
+                                invoice,
+                                interaction.user.id
+                            );
+                            if (debtIsPaid) invoices[id] = invoice;
+                        }
+                    }
+                    break;
+                case 'pending':
+                    for (const [id, invoice] of _.entries(allInvoices)) {
+                        const debtorIDs = invoice.debtor.map((d) => d.id);
+                        const userIsDebtor = debtorIDs.includes(
+                            interaction.user.id
+                        );
+
+                        if (userIsDebtor) {
+                            const debtIsPaid = isDebtPaid(
+                                invoice,
+                                interaction.user.id
+                            );
+                            if (!debtIsPaid) invoices[id] = invoice;
+                        }
+                    }
+                    break;
+                case 'all':
+                    for (const [id, invoice] of _.entries(allInvoices)) {
+                        const debtorIDs = invoice.debtor.map((d) => d.id);
+                        const userIsDebtor = debtorIDs.includes(
+                            interaction.user.id
+                        );
+                        if (userIsDebtor) {
+                            invoices[id] = invoice;
+                        }
+                    }
+                    break;
+                default:
+                    break;
+            }
+
+            const embed = new EmbedBuilder()
+                .setTitle(
+                    `${interaction.user.username} as debtor (${debtType})`
+                )
+                .setDescription(
+                    _.entries(invoices)
+                        .map(([id, iv], index) => {
+                            return `${index + 1}. ${iv.title} - \`${id}\` ${
+                                isDebtPaid(iv, interaction.user.id)
+                                    ? '✅'
+                                    : '❌'
                             }`;
                         })
                         .join('\n')
@@ -378,4 +453,12 @@ function isInvoiceCompleted(invoice: Invoice) {
         0
     );
     return loanedAmount === receivedAmount;
+}
+
+function isDebtPaid(invoice: Invoice, debtorID: string) {
+    const debtorIDs = invoice.debtor.map((d) => d.id);
+    const userIsDebtor = debtorIDs.includes(debtorID);
+    const debtor = invoice.debtor.find((d) => d.id === debtorID);
+    if (debtor === undefined) throw Error('Debtor not found.');
+    return debtor.amount === debtor.paid;
 }
