@@ -379,10 +379,21 @@ client.on('interactionCreate', async (interaction) => {
     const message = interaction.message;
     const invoiceId = message.embeds.pop()?.footer?.text.slice(1);
     if (!invoiceId) {
-        await interaction.reply('❌ An error occurred. Cannot find invoice.');
+        await interaction.reply({
+            content: '❌ An error occurred. Cannot find invoice.',
+            ephemeral: true,
+        });
         return;
     }
     const invoice = await getInvoice(invoiceId);
+    if (!invoice) {
+        await interaction.reply({
+            content: '❌ An error occurred. Cannot find invoice.',
+            ephemeral: true,
+        });
+
+        return;
+    }
     if (
         !invoice.debtor.map((debtor) => debtor.id).includes(interaction.user.id)
     ) {
@@ -396,7 +407,11 @@ client.on('interactionCreate', async (interaction) => {
         (value) => value.id === interaction.user.id
     );
     if (!debtor) {
-        await interaction.reply('❌ An error occurred. Cannot find debtor.');
+        await interaction.reply({
+            content: '❌ An error occurred. Cannot find debtor.',
+            ephemeral: true,
+        });
+
         return;
     }
 
@@ -417,13 +432,13 @@ client.on('interactionCreate', async (interaction) => {
 
     try {
         await interaction.reply({
-            content: interaction.message.content,
+            content: `Thank you for your payment, ${interaction.user}`,
             components: interaction.message.components,
             embeds: [await generateInvoiceEmbed(invoiceId)],
         });
     } catch (e) {
         await interaction.channel?.send({
-            content: interaction.message.content,
+            content: `Thank you for your payment, ${interaction.user}`,
             components: interaction.message.components,
             embeds: [await generateInvoiceEmbed(invoiceId)],
         });
@@ -449,7 +464,7 @@ async function generateInvoiceEmbed(invoiceId: string) {
                             `${client.users.cache.get(usr.id)} - RM ${_.round(
                                 usr.amount,
                                 2
-                            )}${usr.paid > 0 ? ' ✅' : ''}\n`
+                            )}${usr.paid === usr.amount ? ' ✅' : ''}\n`
                     )
                     .join('')
         )
